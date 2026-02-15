@@ -46,15 +46,19 @@ No Electron. No web wrappers. Just pure SwiftUI, native to macOS. Fast, lightwei
 
 ## AI Agent Integration
 
-DocMark provides optional skills for AI coding agents. When installed, agents learn to follow your `.docsconfig.yaml` structure and can intelligently organize documentation as they write it.
+DocMark is designed for the workflow where **AI agents write your docs, and you just read them**.
 
-**Supported agents:** Claude Code, OpenCode
+### How It Works
 
-**Installation:** Tools menu → Install Skill (one-click)
+```
+┌─────────────────────────────────────────────────────────┐
+│  1. You define structure        .docsconfig.yaml        │
+│  2. AI agent writes docs        Following your config   │
+│  3. You open in DocMark         Read beautifully        │
+└─────────────────────────────────────────────────────────┘
+```
 
-Skills are completely opt-in — DocMark works perfectly without them. They simply enhance the experience when you're using AI agents to generate or maintain documentation.
-
-### Example `.docsconfig.yaml`
+**Step 1 — Define your documentation structure** with `.docsconfig.yaml`:
 
 ```yaml
 version: "1.0"
@@ -64,13 +68,89 @@ documentation:
   root: "."
   sections:
     - id: "guides"
+      title: "Guides"
       path: "docs/guides"
       pattern: "*.md"
+      frontmatter_schema: "guide"
     - id: "adr"
+      title: "Architecture Decision Records"
       path: "docs/adr"
       pattern: "*.md"
       frontmatter_schema: "adr"
+frontmatter_schemas:
+  adr:
+    required: [status, date, deciders]
+    status_values: [proposed, accepted, deprecated, superseded]
+  guide:
+    required: [title]
+    optional: [difficulty, estimated_time]
+    difficulty_values: [beginner, intermediate, advanced]
 ```
+
+**Step 2 — Install the skill** for your AI coding agent:
+
+| Agent | Install | Skill Location |
+|-------|---------|----------------|
+| Claude Code | Tools → Install Claude Code Skill | `~/.claude/skills/docmark/SKILL.md` |
+| OpenCode | Tools → Install OpenCode Skill | `~/.opencode/skills/docmark/skill.yaml` |
+
+Once installed, the agent automatically:
+- Reads your `.docsconfig.yaml` to understand the project structure
+- Places new docs in the correct directories (`docs/adr/`, `docs/guides/`, etc.)
+- Includes required frontmatter fields (status, date, title, etc.)
+- Follows consistent formatting and templates
+
+**Step 3 — Open your project in DocMark and read.** That's it.
+
+The agent creates `docs/adr/0003-switch-to-postgres.md` with proper frontmatter. You open DocMark, navigate to the ADR section in the sidebar, and read a beautifully rendered architecture decision record. No editing, no formatting — just reading.
+
+### Example: Ask Your Agent to Create an ADR
+
+You tell Claude Code:
+
+> "Create an ADR for switching our database to PostgreSQL"
+
+The agent (with DocMark skill installed) reads your `.docsconfig.yaml`, finds the ADR schema, and creates:
+
+```markdown
+---
+status: proposed
+date: 2025-02-15
+deciders: [Engineering Team]
+---
+
+# Switch to PostgreSQL
+
+## Context
+Our current SQLite database is reaching scalability limits...
+
+## Decision
+We will migrate to PostgreSQL for production...
+
+## Consequences
+**Positive:** Better concurrent write performance, advanced query capabilities
+**Negative:** Increased infrastructure complexity
+```
+
+This file lands in `docs/adr/0003-switch-to-postgres.md` — exactly where your config says it should go. Open DocMark and it's already in your sidebar, rendered with proper styling.
+
+### Skills Are Optional
+
+All of this is opt-in. DocMark works perfectly as a standalone documentation reader without any AI integration. No `.docsconfig.yaml` needed — just open any folder with markdown files.
+
+### Document Templates
+
+DocMark includes starter templates in the `templates/` directory:
+
+| Template | Purpose |
+|----------|---------|
+| `adr.md` | Architecture Decision Record with status, context, decision, consequences |
+| `changelog.md` | Keep a Changelog format for version history |
+| `api-doc.md` | API endpoint documentation with request/response examples |
+| `guide.md` | Step-by-step tutorial with difficulty level and prerequisites |
+| `docsconfig-template.yaml` | Starter `.docsconfig.yaml` for your project |
+
+AI agents use these templates as reference. You can also use them manually.
 
 ## Installation
 
@@ -139,19 +219,6 @@ DocMark/
 | Diagrams | Mermaid.js (via WKWebView) |
 | Math | KaTeX (via WKWebView) |
 | Build | Swift Package Manager |
-
-## Templates
-
-DocMark includes document templates for common documentation types. Use them to quickly scaffold new documentation with consistent structure.
-
-Available templates:
-
-- **ADR (Architecture Decision Records)** — Document architectural decisions with context and consequences
-- **Changelog** — Keep a Changelog format for version history
-- **API Documentation** — Structured API reference documentation
-- **Guide / Tutorial** — Step-by-step instructional content
-
-Find them in the `templates/` directory.
 
 ## Contributing
 

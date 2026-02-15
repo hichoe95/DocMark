@@ -54,20 +54,19 @@ Electron 없이. Mac 네이티브 SwiftUI. 가볍고 빠르며, macOS에서 자�
 
 ## AI 에이전트 연동
 
-DocMark는 AI 코딩 에이전트를 위한 **선택적 스킬**을 제공합니다. 에이전트가 `.docsconfig.yaml` 구조를 따르도록 학습되어, 문서를 자동으로 생성하고 업데이트할 수 있습니다.
+DocMark는 **AI 에이전트가 문서를 쓰고, 여러분은 읽기만 하면 되는** 워크플로우를 위해 설계되었습니다.
 
-**지원 에이전트:**
-- Claude Code
-- OpenCode
+### 동작 방식
 
-**설치 방법:**
-1. DocMark 실행
-2. 도구 메뉴 → 스킬 설치
-3. 원클릭으로 에이전트 스킬 설치 완료
+```
+┌─────────────────────────────────────────────────────────┐
+│  1. 문서 구조 정의              .docsconfig.yaml        │
+│  2. AI 에이전트가 문서 작성     설정에 맞춰 자동 생성   │
+│  3. DocMark로 열기              아름답게 읽기            │
+└─────────────────────────────────────────────────────────┘
+```
 
-**참고:** 스킬은 선택 사항입니다. 없어도 DocMark는 완벽히 동작합니다.
-
-### `.docsconfig.yaml` 예시
+**1단계 — `.docsconfig.yaml`로 문서 구조를 정의합니다:**
 
 ```yaml
 version: "1.0"
@@ -77,13 +76,89 @@ documentation:
   root: "."
   sections:
     - id: "guides"
+      title: "가이드"
       path: "docs/guides"
       pattern: "*.md"
+      frontmatter_schema: "guide"
     - id: "adr"
+      title: "아키텍처 의사결정 기록"
       path: "docs/adr"
       pattern: "*.md"
       frontmatter_schema: "adr"
+frontmatter_schemas:
+  adr:
+    required: [status, date, deciders]
+    status_values: [proposed, accepted, deprecated, superseded]
+  guide:
+    required: [title]
+    optional: [difficulty, estimated_time]
+    difficulty_values: [beginner, intermediate, advanced]
 ```
+
+**2단계 — AI 코딩 에이전트에 스킬을 설치합니다:**
+
+| 에이전트 | 설치 방법 | 스킬 위치 |
+|----------|-----------|-----------|
+| Claude Code | 도구 → Claude Code 스킬 설치 | `~/.claude/skills/docmark/SKILL.md` |
+| OpenCode | 도구 → OpenCode 스킬 설치 | `~/.opencode/skills/docmark/skill.yaml` |
+
+스킬이 설치되면 에이전트가 자동으로:
+- `.docsconfig.yaml`을 읽어 프로젝트 문서 구조를 파악합니다
+- 새 문서를 올바른 디렉토리에 생성합니다 (`docs/adr/`, `docs/guides/` 등)
+- 필수 frontmatter 필드를 포함합니다 (status, date, title 등)
+- 일관된 형식과 템플릿을 따릅니다
+
+**3단계 — DocMark로 프로젝트를 열고 읽으세요.** 끝입니다.
+
+에이전트가 `docs/adr/0003-switch-to-postgres.md`를 적절한 frontmatter와 함께 생성합니다. DocMark를 열면 사이드바의 ADR 섹션에 바로 나타나고, 아름답게 렌더링된 아키텍처 의사결정 기록을 읽을 수 있습니다. 편집도, 포맷팅도 필요 없습니다 — 그냥 읽기만 하면 됩니다.
+
+### 예시: 에이전트에게 ADR 작성 요청하기
+
+Claude Code에게 이렇게 말합니다:
+
+> "PostgreSQL로 데이터베이스를 전환하는 ADR을 작성해줘"
+
+에이전트는 (DocMark 스킬이 설치된 상태에서) `.docsconfig.yaml`을 읽고, ADR 스키마를 찾아서 다음과 같이 생성합니다:
+
+```markdown
+---
+status: proposed
+date: 2025-02-15
+deciders: [Engineering Team]
+---
+
+# PostgreSQL로 전환
+
+## Context
+현재 SQLite 데이터베이스가 확장성 한계에 도달하고 있습니다...
+
+## Decision
+프로덕션 환경에서 PostgreSQL로 마이그레이션합니다...
+
+## Consequences
+**긍정적:** 동시 쓰기 성능 향상, 고급 쿼리 기능
+**부정적:** 인프라 복잡도 증가
+```
+
+이 파일은 `docs/adr/0003-switch-to-postgres.md`에 저장됩니다 — 설정에서 지정한 바로 그 위치입니다. DocMark를 열면 사이드바에 이미 나타나 있고, 깔끔하게 렌더링되어 있습니다.
+
+### 스킬은 선택 사항입니다
+
+이 모든 것은 선택적입니다. DocMark는 AI 연동 없이도 독립적인 문서 리더로 완벽하게 동작합니다. `.docsconfig.yaml` 없이도 마크다운 파일이 있는 폴더를 열기만 하면 됩니다.
+
+### 문서 템플릿
+
+DocMark는 `templates/` 디렉토리에 시작 템플릿을 제공합니다:
+
+| 템플릿 | 용도 |
+|--------|------|
+| `adr.md` | 아키텍처 의사결정 기록 (상태, 맥락, 결정, 결과) |
+| `changelog.md` | Keep a Changelog 형식의 변경 이력 |
+| `api-doc.md` | API 엔드포인트 문서 (요청/응답 예시 포함) |
+| `guide.md` | 단계별 튜토리얼 (난이도, 사전 요구사항 포함) |
+| `docsconfig-template.yaml` | 프로젝트용 `.docsconfig.yaml` 시작 템플릿 |
+
+AI 에이전트가 이 템플릿을 참고하여 문서를 작성합니다. 직접 사용할 수도 있습니다.
 
 ---
 
@@ -164,19 +239,6 @@ DocMark/
 | 다이어그램 | Mermaid.js (WKWebView) |
 | 수식 | KaTeX (WKWebView) |
 | 빌드 | Swift Package Manager |
-
----
-
-## 템플릿
-
-DocMark는 일반적인 문서 유형을 위한 템플릿을 제공합니다:
-
-- **ADR (아키텍처 의사결정 기록)** — 중요한 기술 결정 문서화
-- **변경 로그** — Keep a Changelog 형식
-- **API 문서** — 엔드포인트, 파라미터, 응답 예시
-- **가이드 / 튜토리얼** — 단계별 설명 문서
-
-`templates/` 디렉토리에서 확인할 수 있습니다.
 
 ---
 
