@@ -1,0 +1,52 @@
+version: "1.0"
+
+project:
+  name: "Sample Project"
+  description: "A sample project demonstrating DocMark documentation structure"
+  version: "1.0.0"
+
+documentation:
+  root: "."
+
+  root_files:
+    - path: "README.md"
+      title: "Overview"
+      required: true
+    - path: "CHANGELOG.md"
+      title: "Changelog"
+      required: false
+
+  sections:
+    - id: "adr"
+      title: "Architecture Decisions"
+      path: "docs/adr"
+      pattern: "*.md"
+      frontmatter_schema: "adr"
+
+    - id: "guides"
+      title: "Guides"
+      path: "docs/guides"
+      pattern: "*.md"
+      frontmatter_schema: "guide"
+
+    - id: "api"
+      title: "API Documentation"
+      path: "docs/api"
+      pattern: "*.md"
+      frontmatter_schema: "api-doc"
+
+frontmatter_schemas:
+  adr:
+    required: ["status", "date", "deciders"]
+    optional: ["tags", "supersedes"]
+    status_values: ["proposed", "accepted", "deprecated", "superseded"]
+
+  guide:
+    required: ["title"]
+    optional: ["description", "difficulty", "tags"]
+    difficulty_values: ["beginner", "intermediate", "advanced"]
+
+  api-doc:
+    required: ["title", "endpoint"]
+    optional: ["method", "auth_required"]
+    method_values: ["GET", "POST", "PUT", "DELETE", "PATCH"]

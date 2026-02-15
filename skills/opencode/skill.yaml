@@ -1,0 +1,218 @@
+name: docmark
+description: "Helps OpenCode follow DocMark documentation standards"
+version: "1.0.0"
+author: "DocMark Team"
+
+activation:
+  files:
+    - ".docsconfig.yaml"
+    - "README.md"
+  keywords:
+    - "document"
+    - "docs"
+    - "changelog"
+    - "adr"
+    - "readme"
+
+instructions: |
+  You are working with a project that uses DocMark documentation standards.
+  
+  ## Key Rules
+  
+  1. Always check for `.docsconfig.yaml` in the project root to understand the documentation structure
+  2. Follow the configured directory structure for different document types
+  3. Use appropriate frontmatter for each document type
+  4. Place files in the correct locations based on the configuration
+  
+  ## Document Types
+  
+  ### Architecture Decision Records (ADRs)
+  
+  - Location: Configured in `.docsconfig.yaml` under `adr.directory` (default: `docs/adr/`)
+  - Required frontmatter: `title`, `date`, `status`
+  - Optional frontmatter: `tags`, `author`, `supersedes`, `superseded_by`
+  - Status values: `proposed`, `accepted`, `rejected`, `deprecated`, `superseded`
+  - Naming: Use sequential numbers (e.g., `0001-use-markdown.md`)
+  
+  ### Guides
+  
+  - Location: Configured in `.docsconfig.yaml` under `guides.directory` (default: `docs/guides/`)
+  - Required frontmatter: `title`, `date`, `difficulty`
+  - Optional frontmatter: `tags`, `author`, `estimated_time`
+  - Difficulty values: `beginner`, `intermediate`, `advanced`
+  
+  ### API Documentation
+  
+  - Location: Configured in `.docsconfig.yaml` under `api.directory` (default: `docs/api/`)
+  - Required frontmatter: `title`, `date`
+  - Optional frontmatter: `tags`, `author`, `version`, `endpoint`
+  
+  ## Templates
+  
+  ### ADR Template
+  
+  ```markdown
+  ---
+  title: [Short title of the decision]
+  date: YYYY-MM-DD
+  status: proposed
+  tags: []
+  ---
+  
+  # [Short title of the decision]
+  
+  ## Context
+  
+  What is the issue that we're seeing that is motivating this decision or change?
+  
+  ## Decision
+  
+  What is the change that we're proposing and/or doing?
+  
+  ## Consequences
+  
+  What becomes easier or more difficult to do because of this change?
+  ```
+  
+  ### Changelog Entry Template
+  
+  ```markdown
+  ## [Version] - YYYY-MM-DD
+  
+  ### Added
+  - New features or capabilities
+  
+  ### Changed
+  - Changes to existing functionality
+  
+  ### Fixed
+  - Bug fixes
+  
+  ### Deprecated
+  - Features that will be removed in future versions
+  
+  ### Removed
+  - Features that have been removed
+  
+  ### Security
+  - Security-related changes
+  ```
+
+templates:
+  adr:
+    file: "templates/adr.md"
+    description: "Architecture Decision Record template with frontmatter"
+  changelog:
+    file: "templates/changelog.md"
+    description: "Changelog entry template following Keep a Changelog format"
+  guide:
+    file: "templates/guide.md"
+    description: "Guide template with difficulty levels"
+  api_doc:
+    file: "templates/api.md"
+    description: "API documentation template with endpoint details"
+
+examples:
+  - user: "Create an ADR for switching to PostgreSQL"
+    assistant: |
+      I'll create an Architecture Decision Record for switching to PostgreSQL.
+      
+      First, let me check the ADR directory configuration in `.docsconfig.yaml`.
+      
+      Creating `docs/adr/0001-switch-to-postgresql.md`:
+      
+      ```markdown
+      ---
+      title: Switch to PostgreSQL for primary database
+      date: 2026-02-15
+      status: proposed
+      tags: [database, infrastructure]
+      ---
+      
+      # Switch to PostgreSQL for primary database
+      
+      ## Context
+      
+      Our application currently uses SQLite for development and testing, but we need a production-ready database that supports concurrent connections, advanced querying, and better scalability.
+      
+      ## Decision
+      
+      We will use PostgreSQL as our primary database for both development and production environments.
+      
+      ## Consequences
+      
+      **Positive:**
+      - Better support for concurrent connections
+      - Advanced features like JSON columns, full-text search, and window functions
+      - Strong ACID compliance and data integrity
+      - Excellent tooling and community support
+      
+      **Negative:**
+      - Additional infrastructure complexity compared to SQLite
+      - Requires running a database server in development
+      - Team needs to learn PostgreSQL-specific features
+      ```
+  
+  - user: "Update the changelog for version 1.2.0 with the new export feature"
+    assistant: |
+      I'll update the CHANGELOG.md with the new export feature for version 1.2.0.
+      
+      Adding to `CHANGELOG.md`:
+      
+      ```markdown
+      ## [1.2.0] - 2026-02-15
+      
+      ### Added
+      - Export functionality for documentation in multiple formats (PDF, HTML, Markdown)
+      - Batch export support for entire documentation sets
+      - Export templates with customizable styling
+      
+      ### Changed
+      - Improved documentation validation performance by 40%
+      - Updated CLI help text for better clarity
+      
+      ### Fixed
+      - Fixed frontmatter parsing for documents with special characters in titles
+      - Resolved issue where tags with spaces were not properly validated
+      ```
+  
+  - user: "Create a beginner guide for setting up DocMark"
+    assistant: |
+      I'll create a beginner-level guide for setting up DocMark.
+      
+      Creating `docs/guides/getting-started.md`:
+      
+      ```markdown
+      ---
+      title: Getting Started with DocMark
+      date: 2026-02-15
+      difficulty: beginner
+      tags: [setup, quickstart]
+      estimated_time: 10 minutes
+      ---
+      
+      # Getting Started with DocMark
+      
+      This guide will help you set up DocMark in your project and create your first documentation.
+      
+      ## Prerequisites
+      
+      - A project with a git repository
+      - Basic familiarity with Markdown
+      
+      ## Installation
+      
+      1. Install DocMark CLI tool
+      2. Initialize DocMark in your project
+      3. Configure your documentation structure
+      
+      ## Creating Your First Document
+      
+      Use the DocMark CLI to create your first ADR or guide with proper frontmatter and structure.
+      
+      ## Next Steps
+      
+      - Explore the ADR template
+      - Set up automated validation
+      - Integrate with your CI/CD pipeline
+      ```
