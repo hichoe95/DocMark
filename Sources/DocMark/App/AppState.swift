@@ -558,24 +558,13 @@ final class AppState: ObservableObject {
     // MARK: - Bundled Guide Project
 
     private func registerBundledGuideIfNeeded() {
-        let guideRegistered = UserDefaults.standard.bool(forKey: "guideProjectRegistered")
-        guard !guideRegistered else { return }
-
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let guideDir = appSupport.appendingPathComponent("DocMark/DocMarkGuide", isDirectory: true)
 
-        if !FileManager.default.fileExists(atPath: guideDir.path) {
-            if let bundledGuide = Bundle.main.url(forResource: "DocMarkGuide", withExtension: nil) {
-                try? FileManager.default.createDirectory(at: guideDir.deletingLastPathComponent(), withIntermediateDirectories: true)
-                try? FileManager.default.copyItem(at: bundledGuide, to: guideDir)
-            } else {
-                try? FileManager.default.createDirectory(at: guideDir, withIntermediateDirectories: true)
-                let readmePath = guideDir.appendingPathComponent("README.md")
-                let skillsPath = guideDir.appendingPathComponent("ai-skills.md")
-                try? Self.guideReadme.write(to: readmePath, atomically: true, encoding: .utf8)
-                try? Self.guideAISkills.write(to: skillsPath, atomically: true, encoding: .utf8)
-            }
-        }
+        updateGuideContent(at: guideDir)
+
+        let guideRegistered = UserDefaults.standard.bool(forKey: "guideProjectRegistered")
+        guard !guideRegistered else { return }
 
         if FileManager.default.fileExists(atPath: guideDir.path) {
             let project = Project(
@@ -589,6 +578,28 @@ final class AppState: ObservableObject {
             _ = try? projectRepo.insertOrUpdate(project)
             loadProjects()
             UserDefaults.standard.set(true, forKey: "guideProjectRegistered")
+        }
+    }
+
+    private func updateGuideContent(at guideDir: URL) {
+        try? FileManager.default.createDirectory(at: guideDir, withIntermediateDirectories: true)
+
+        if let bundledGuide = Bundle.main.url(forResource: "DocMarkGuide", withExtension: nil) {
+            let fm = FileManager.default
+            let enumerator = fm.enumerator(at: bundledGuide, includingPropertiesForKeys: [.isRegularFileKey])
+            while let sourceURL = enumerator?.nextObject() as? URL {
+                guard (try? sourceURL.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true else { continue }
+                let relative = sourceURL.path.replacingOccurrences(of: bundledGuide.path + "/", with: "")
+                let destURL = guideDir.appendingPathComponent(relative)
+                try? fm.createDirectory(at: destURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try? fm.removeItem(at: destURL)
+                try? fm.copyItem(at: sourceURL, to: destURL)
+            }
+        } else {
+            let readmePath = guideDir.appendingPathComponent("README.md")
+            let skillsPath = guideDir.appendingPathComponent("ai-skills.md")
+            try? Self.guideReadme.write(to: readmePath, atomically: true, encoding: .utf8)
+            try? Self.guideAISkills.write(to: skillsPath, atomically: true, encoding: .utf8)
         }
     }
 
