@@ -644,39 +644,59 @@ final class AppState: ObservableObject {
     private static let guideAISkills = """
     # AI Agent Integration
 
-    DocMark works with AI coding agents like Claude Code and OpenCode. Install a skill so the agent knows how to write documentation that fits your project structure.
+    DocMark can install **skills** for AI coding agents like Claude Code and OpenCode. A skill is an instruction file that teaches the agent how to write documentation that matches your project's structure.
 
     ---
 
-    ## How It Works
+    ## What Is a Skill?
 
-    1. Create a `.docsconfig.yaml` in your project root to define sections, paths, and frontmatter schemas
-    2. Install the DocMark skill into your project (sidebar button or `⌘I`)
-    3. The AI agent reads both files and writes documentation accordingly
-    4. DocMark auto-reloads — you see the new docs instantly
+    A skill is a markdown file (`SKILL.md`) that gets **injected into the AI agent's context**. It contains instructions the agent follows when working on your project.
+
+    Without a skill, the agent writes docs in random formats and locations. With the skill, every document follows your configured structure.
+
+    ### How the Agent Discovers Skills
+
+    ```
+    Project root
+    └── .claude/
+        └── skills/
+            └── docmark/
+                └── SKILL.md    ← Agent finds and reads this
+    ```
+
+    1. The agent scans `.claude/skills/` for subdirectories containing `SKILL.md`
+    2. It reads the skill's `description` to know **when** to activate it
+    3. When your request matches (e.g., "create an ADR"), the agent loads the full instructions
+    4. The agent follows those instructions while completing your task
 
     ## Installing the Skill
 
     **Project-Level (Recommended):** Click "Install AI Skill" at the bottom of the sidebar, or press `⌘I`.
 
-    This creates `.claude/skills/docmark/SKILL.md` inside your project. Both Claude Code and OpenCode detect this path automatically.
+    This creates `.claude/skills/docmark/SKILL.md` inside your project. Both Claude Code and OpenCode detect this path automatically. The file gets committed to git — every team member gets the skill automatically.
 
     **Global:** Menu bar → Tools → Install Skill Globally → choose Claude Code or OpenCode.
 
-    ## What the Agent Does After Installation
+    ## What Happens After Installation
 
-    Once installed, the agent will:
+    ### 1. Agent reads your config
+    The skill tells the agent to check `.docsconfig.yaml` for your documentation structure.
 
-    1. **Read your config** — checks `.docsconfig.yaml` to learn your documentation structure
-    2. **Place files correctly** — ADRs in `docs/adr/`, guides in `docs/guides/`, API docs in `docs/api/`
-    3. **Include frontmatter** — each document type gets proper YAML frontmatter (status, date, title, etc.)
-    4. **Follow templates** — consistent structure across all documents of the same type
+    ### 2. Agent places files correctly
+    ADRs in `docs/adr/`, guides in `docs/guides/`, API docs in `docs/api/` — not random locations.
 
-    ## Example
+    ### 3. Agent includes frontmatter
+    Each document type gets proper YAML frontmatter (status, date, deciders for ADRs; title, difficulty for guides).
 
-    You tell Claude Code: "Create an ADR for switching to PostgreSQL"
+    ### 4. Agent follows templates
+    Consistent structure: all ADRs have Context → Decision → Consequences, all guides have prerequisites.
 
-    The agent creates `docs/adr/0003-switch-to-postgres.md`:
+    ## Example: With vs Without
+
+    You ask: "Create an ADR for switching to PostgreSQL"
+
+    **With skill:** Creates `docs/adr/0003-switch-to-postgresql.md` with correct frontmatter and template.
+    **Without skill:** Might create `adr-postgres.md` in the project root, skip frontmatter, use random format.
 
     ```markdown
     ---
