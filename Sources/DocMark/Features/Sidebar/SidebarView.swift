@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SidebarView: View {
     @EnvironmentObject var appState: AppState
+    @State private var showSkillInstalled = false
 
     var body: some View {
         Group {
@@ -41,7 +42,7 @@ struct SidebarView: View {
         }
         .listStyle(.sidebar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if appState.selectedProject != nil && !appState.isSkillInstalledInProject {
+            if appState.selectedProject != nil && (!appState.isSkillInstalledInProject || showSkillInstalled) {
                 skillInstallBar
             }
         }
@@ -50,18 +51,28 @@ struct SidebarView: View {
     private var skillInstallBar: some View {
         Button {
             appState.installSkillToProject()
+            guard appState.isSkillInstalledInProject else { return }
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showSkillInstalled = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    showSkillInstalled = false
+                }
+            }
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: "sparkles")
+                Image(systemName: showSkillInstalled ? "checkmark.circle.fill" : "sparkles")
                     .font(.caption)
-                Text("Install AI Skill")
+                Text(showSkillInstalled ? "Skill Installed" : "Install AI Skill")
                     .font(.caption)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
         }
         .buttonStyle(.borderless)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(showSkillInstalled ? .green : .secondary)
+        .disabled(showSkillInstalled)
         .background(.bar)
         .overlay(alignment: .top) { Divider() }
     }

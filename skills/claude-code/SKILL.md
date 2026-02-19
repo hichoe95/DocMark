@@ -1,18 +1,11 @@
+---
+name: docmark
+description: Follow DocMark documentation standards when creating or editing docs, changelogs, ADRs, API documentation, or guides. Activates when the user asks to document, update docs, add changelog entries, create ADRs, or when .docsconfig.yaml is present.
+---
+
 # DocMark Documentation Standard
 
-## Description
-
-This skill helps Claude Code follow the DocMark documentation structure defined in `.docsconfig.yaml`. DocMark provides a standardized approach to project documentation with consistent frontmatter schemas, templates, and organization patterns.
-
-## When to Use
-
-Activate this skill when:
-
-- Creating or editing project documentation
-- Generating changelogs, ADRs (Architecture Decision Records), or API documentation
-- User requests "document this", "update docs", "add changelog entry", or "create ADR"
-- Working in a project with `.docsconfig.yaml` present
-- Setting up documentation structure for a new project
+This skill helps follow the DocMark documentation structure defined in `.docsconfig.yaml`. It provides a standardized approach to project documentation with consistent frontmatter schemas, templates, and organization patterns.
 
 ## Instructions
 

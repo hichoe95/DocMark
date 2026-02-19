@@ -190,25 +190,22 @@ struct ToolsCommands: Commands {
 
 enum SkillContent {
     static let claudeCode = """
+    ---
+    name: docmark
+    description: Follow DocMark documentation standards when creating or editing docs, changelogs, ADRs, API documentation, or guides. Activates when the user asks to document, update docs, add changelog entries, create ADRs, or when .docsconfig.yaml is present.
+    ---
+
     # DocMark Documentation Standard
 
-    ## Description
-
-    This skill helps Claude Code follow the DocMark documentation structure defined in `.docsconfig.yaml`.
-
-    ## When to Use
-
-    Activate this skill when:
-    - Creating or editing project documentation
-    - Generating changelogs, ADRs, or API documentation
-    - Working in a project with `.docsconfig.yaml` present
+    This skill helps follow the DocMark documentation structure defined in `.docsconfig.yaml`.
 
     ## Instructions
 
     1. Check for `.docsconfig.yaml` in the project root
     2. Follow configured directory structure for different document types
-    3. Use appropriate frontmatter for each document type
-    4. Place files in correct locations based on configuration
+    3. Use appropriate frontmatter for each document type (ADR: status/date/deciders, Guide: title/difficulty, API: title/endpoint/method)
+    4. Place files in correct locations (ADRs in docs/adr/, Guides in docs/guides/, API in docs/api/)
+    5. Use sequential numbering for ADRs (check existing files for next number)
     """
 
     static let openCode = """
