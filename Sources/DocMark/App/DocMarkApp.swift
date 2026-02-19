@@ -106,26 +106,23 @@ struct ToolsCommands: Commands {
     private func installSkillToProject() {
         guard let project = appState.selectedProject else { return }
 
-        let projectURL = URL(fileURLWithPath: project.path)
-        let destDir = projectURL.appendingPathComponent(".claude/skills/docmark")
-        let destFile = destDir.appendingPathComponent("SKILL.md")
+        let destFile = URL(fileURLWithPath: project.path)
+            .appendingPathComponent(".claude/skills/docmark/SKILL.md")
 
-        if FileManager.default.fileExists(atPath: destFile.path) {
+        if appState.isSkillInstalledInProject {
             showAlert(title: "Already Installed", message: "Skill is already installed at:\n\(destFile.path)")
             return
         }
 
-        do {
-            try FileManager.default.createDirectory(at: destDir, withIntermediateDirectories: true)
-            try skillContent(forResource: "SKILL", withExtension: "md", fallback: SkillContent.claudeCode)
-                .write(to: destFile, atomically: true, encoding: .utf8)
+        appState.installSkillToProject()
 
+        if appState.isSkillInstalledInProject {
             showAlert(
                 title: "Skill Installed",
                 message: "Installed to:\n\(destFile.path)\n\nBoth Claude Code and OpenCode will automatically use this skill in this project."
             )
-        } catch {
-            showAlert(title: "Installation Failed", message: "Could not install skill: \(error.localizedDescription)")
+        } else {
+            showAlert(title: "Installation Failed", message: "Could not install skill. Check folder permissions.")
         }
     }
 
@@ -143,7 +140,7 @@ struct ToolsCommands: Commands {
 
         do {
             try FileManager.default.createDirectory(at: destDir, withIntermediateDirectories: true)
-            try skillContent(forResource: "SKILL", withExtension: "md", fallback: SkillContent.claudeCode)
+            try AppState.loadSkillContent(forResource: "SKILL", withExtension: "md", fallback: SkillContent.claudeCode)
                 .write(to: destFile, atomically: true, encoding: .utf8)
 
             showAlert(
@@ -167,7 +164,7 @@ struct ToolsCommands: Commands {
 
         do {
             try FileManager.default.createDirectory(at: destDir, withIntermediateDirectories: true)
-            try skillContent(forResource: "skill", withExtension: "yaml", fallback: SkillContent.openCode)
+            try AppState.loadSkillContent(forResource: "skill", withExtension: "yaml", fallback: SkillContent.openCode)
                 .write(to: destFile, atomically: true, encoding: .utf8)
 
             showAlert(
@@ -180,14 +177,6 @@ struct ToolsCommands: Commands {
     }
 
     // MARK: - Helpers
-
-    private func skillContent(forResource name: String, withExtension ext: String, fallback: String) -> String {
-        if let bundled = Bundle.main.url(forResource: name, withExtension: ext, subdirectory: "skills/claude-code") ?? Bundle.main.url(forResource: name, withExtension: ext, subdirectory: "skills/opencode"),
-           let content = try? String(contentsOf: bundled, encoding: .utf8) {
-            return content
-        }
-        return fallback
-    }
 
     private func showAlert(title: String, message: String) {
         let alert = NSAlert()

@@ -36,6 +36,9 @@ final class AppState: ObservableObject {
     @Published var gitChangedFiles: [GitFileChange] = []
     @Published var selectedGitChange: GitFileChange?
 
+    // MARK: - Skill
+    @Published var isSkillInstalledInProject: Bool = false
+
     // MARK: - Services
     private let db = GRDBManager.shared
     private lazy var projectRepo = ProjectRepository(dbQueue: db.dbQueue)
@@ -151,6 +154,7 @@ final class AppState: ObservableObject {
 
             fileWatcher.startWatching(path: url.path)
             loadGitInfo()
+            checkSkillInstallation()
 
             restoreState(for: saved)
             if selectedDocument == nil, let first = findFirstDocument(in: sidebarNodes) {
@@ -162,6 +166,7 @@ final class AppState: ObservableObject {
             sidebarNodes = scanner.scan(rootURL: url)
             allDocuments = scanner.flatDocumentList()
             isShowingProjectLibrary = false
+            checkSkillInstallation()
 
             if let first = findFirstDocument(in: sidebarNodes) {
                 selectedDocument = first
@@ -196,6 +201,7 @@ final class AppState: ObservableObject {
 
         fileWatcher.startWatching(path: url.path)
         loadGitInfo()
+        checkSkillInstallation()
 
         restoreState(for: project)
         if selectedDocument == nil, let first = findFirstDocument(in: sidebarNodes) {
@@ -638,28 +644,110 @@ final class AppState: ObservableObject {
     private static let guideAISkills = """
     # AI Agent Integration
 
-    DocMark provides optional skills for AI coding agents so they follow consistent documentation structures.
+    DocMark works with AI coding agents like Claude Code and OpenCode. Install a skill so the agent knows how to write documentation that fits your project structure.
 
     ---
 
-    ## Supported Agents
+    ## How It Works
 
-    ### Claude Code
+    1. Create a `.docsconfig.yaml` in your project root to define sections, paths, and frontmatter schemas
+    2. Install the DocMark skill into your project (sidebar button or `⌘I`)
+    3. The AI agent reads both files and writes documentation accordingly
+    4. DocMark auto-reloads — you see the new docs instantly
 
-    **Install via:** DocMark menu → `Tools` → `Install Claude Code Skill`
+    ## Installing the Skill
 
-    ### OpenCode
+    **Project-Level (Recommended):** Click "Install AI Skill" at the bottom of the sidebar, or press `⌘I`.
 
-    **Install via:** DocMark menu → `Tools` → `Install OpenCode Skill`
+    This creates `.claude/skills/docmark/SKILL.md` inside your project. Both Claude Code and OpenCode detect this path automatically.
 
-    ## `.docsconfig.yaml`
+    **Global:** Menu bar → Tools → Install Skill Globally → choose Claude Code or OpenCode.
 
-    Add this file to your project root to define your documentation structure. AI agents read this file to understand where to create docs and what frontmatter to include.
+    ## What the Agent Does After Installation
 
-    ## Usage Is Optional
+    Once installed, the agent will:
+
+    1. **Read your config** — checks `.docsconfig.yaml` to learn your documentation structure
+    2. **Place files correctly** — ADRs in `docs/adr/`, guides in `docs/guides/`, API docs in `docs/api/`
+    3. **Include frontmatter** — each document type gets proper YAML frontmatter (status, date, title, etc.)
+    4. **Follow templates** — consistent structure across all documents of the same type
+
+    ## Example
+
+    You tell Claude Code: "Create an ADR for switching to PostgreSQL"
+
+    The agent creates `docs/adr/0003-switch-to-postgres.md`:
+
+    ```markdown
+    ---
+    status: proposed
+    date: 2026-02-19
+    deciders: [Engineering Team]
+    ---
+
+    # Switch to PostgreSQL
+
+    ## Context
+    Our current database is reaching scalability limits...
+
+    ## Decision
+    We will migrate to PostgreSQL...
+
+    ## Consequences
+    **Positive:** Better concurrent writes, advanced queries
+    **Negative:** Increased infrastructure complexity
+    ```
+
+    DocMark auto-reloads. The new ADR appears in your sidebar immediately.
+
+    ## This Is Optional
 
     Skills and `.docsconfig.yaml` are entirely opt-in. DocMark works perfectly as a standalone reader without any AI integration.
     """
+
+    // MARK: - Skill Installation
+
+    func checkSkillInstallation() {
+        guard let project = selectedProject else {
+            isSkillInstalledInProject = false
+            return
+        }
+        let skillPath = URL(fileURLWithPath: project.path)
+            .appendingPathComponent(".claude/skills/docmark/SKILL.md").path
+        isSkillInstalledInProject = FileManager.default.fileExists(atPath: skillPath)
+    }
+
+    func installSkillToProject() {
+        guard let project = selectedProject else { return }
+
+        let projectURL = URL(fileURLWithPath: project.path)
+        let destDir = projectURL.appendingPathComponent(".claude/skills/docmark")
+        let destFile = destDir.appendingPathComponent("SKILL.md")
+
+        guard !FileManager.default.fileExists(atPath: destFile.path) else {
+            isSkillInstalledInProject = true
+            return
+        }
+
+        do {
+            try FileManager.default.createDirectory(at: destDir, withIntermediateDirectories: true)
+            let content = Self.loadSkillContent(forResource: "SKILL", withExtension: "md", fallback: SkillContent.claudeCode)
+            try content.write(to: destFile, atomically: true, encoding: .utf8)
+            isSkillInstalledInProject = true
+            print("[DocMark] Skill installed to \(destFile.path)")
+        } catch {
+            print("[DocMark] Failed to install skill: \(error)")
+        }
+    }
+
+    static func loadSkillContent(forResource name: String, withExtension ext: String, fallback: String) -> String {
+        if let bundled = Bundle.main.url(forResource: name, withExtension: ext, subdirectory: "skills/claude-code")
+            ?? Bundle.main.url(forResource: name, withExtension: ext, subdirectory: "skills/opencode"),
+           let content = try? String(contentsOf: bundled, encoding: .utf8) {
+            return content
+        }
+        return fallback
+    }
 
     // MARK: - Helpers
 

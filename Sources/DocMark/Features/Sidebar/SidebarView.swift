@@ -40,6 +40,30 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if appState.selectedProject != nil && !appState.isSkillInstalledInProject {
+                skillInstallBar
+            }
+        }
+    }
+
+    private var skillInstallBar: some View {
+        Button {
+            appState.installSkillToProject()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                    .font(.caption)
+                Text("Install AI Skill")
+                    .font(.caption)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+        }
+        .buttonStyle(.borderless)
+        .foregroundStyle(.secondary)
+        .background(.bar)
+        .overlay(alignment: .top) { Divider() }
     }
 }
 
