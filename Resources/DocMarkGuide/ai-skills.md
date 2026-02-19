@@ -8,9 +8,9 @@ DocMark can install **skills** for AI coding agents like Claude Code and OpenCod
 
 A skill is a markdown file (`SKILL.md`) that gets **injected into the AI agent's context**. It contains instructions the agent follows when working on your project.
 
-Without a skill, if you ask Claude Code "Create an ADR for switching to PostgreSQL", the agent writes a generic markdown file wherever it guesses is appropriate. The format, frontmatter, and file location are all up to chance.
+Without a skill, the agent writes documentation in whatever format it guesses. File locations, frontmatter, structure — all ad-hoc.
 
-With the DocMark skill installed, the same request produces a properly structured ADR with correct frontmatter (`status`, `date`, `deciders`), placed in the right directory (`docs/adr/`), following a consistent template (Context → Decision → Consequences).
+With the DocMark skill installed, the agent follows consistent rules for placement, formatting, and structure. And it can **customize itself** to fit your specific project.
 
 ### How the Agent Discovers Skills
 
@@ -26,40 +26,41 @@ Project root
 
 1. The agent scans `.claude/skills/` for subdirectories containing `SKILL.md`
 2. It reads each skill's `description` field to know **when** to activate it
-3. When your request matches a skill's description, the agent loads the full instructions
+3. When your request matches, the agent loads the full instructions
 4. The agent follows those instructions while completing your task
 
-No configuration needed. The agent discovers the skill automatically just because the file exists in the right path.
+No configuration needed. The file's presence is enough.
 
 ### Skill File Format
 
 A `SKILL.md` file has two parts:
 
-**1. YAML Frontmatter** (between `---` markers) — metadata that tells the agent when to use the skill:
+**1. YAML Frontmatter** — metadata that tells the agent when to use the skill:
 
 ```yaml
 ---
 name: docmark
 description: Follow DocMark documentation standards when creating
-  or editing docs, changelogs, ADRs, API documentation, or guides.
+  or editing project documentation.
 ---
 ```
 
 | Field | Purpose |
 |-------|---------|
 | `name` | Skill name. Becomes the `/slash-command` (e.g., `/docmark`) |
-| `description` | Tells the agent **when** to activate. The agent matches your request against this text. |
+| `description` | Tells the agent **when** to activate. Matched against your request. |
 
-**2. Markdown Body** — the actual instructions the agent follows. This can include rules, templates, examples, tables — anything you'd tell a human colleague about how to write docs for your project.
+**2. Markdown Body** — the actual instructions. Rules, templates, examples — anything you'd tell a colleague about how to write docs for your project.
 
-The frontmatter is always loaded so the agent knows the skill exists. The full body only loads when the skill activates, keeping context usage efficient.
+The frontmatter is always loaded (so the agent knows the skill exists). The full body only loads when activated.
 
 ### Automatic vs Manual Activation
 
 The DocMark skill activates **automatically** when you ask the agent to:
 - Create or edit documentation
-- Generate changelogs, ADRs, or API docs
+- Generate changelogs or any doc type
 - Work with `.docsconfig.yaml`
+- Set up documentation standards
 
 You can also invoke it manually:
 ```
@@ -78,7 +79,7 @@ This creates `.claude/skills/docmark/SKILL.md` inside your project. Both Claude 
 
 ### Global
 
-For system-wide installation (applies to all projects): menu bar → **Tools** → **Install Skill Globally** → choose your agent.
+For system-wide installation: menu bar → **Tools** → **Install Skill Globally** → choose your agent.
 
 | Scope | Path | Applies To |
 |-------|------|------------|
@@ -88,147 +89,98 @@ For system-wide installation (applies to all projects): menu bar → **Tools** �
 
 Project-level skills take precedence if the same skill exists globally.
 
-## What Happens After Installation
+## What the Skill Does
 
-Here's the exact sequence when you give the agent a documentation task:
+The DocMark skill works in two layers: **base rules** that apply to every project, and **project customization** that the agent builds with you.
 
-### Step 1: Agent Reads Your Config
+### Layer 1: Base Rules (Always Active)
 
-The skill tells the agent to first check for `.docsconfig.yaml` in your project root:
+Out of the box, the skill gives the agent these rules:
 
-```bash
-cat .docsconfig.yaml
+- **Check `.docsconfig.yaml`** first — if it exists, follow its configuration
+- **Core documents**: README.md (always), CHANGELOG.md (Keep a Changelog format), CONTRIBUTING.md (if needed)
+- **YAML frontmatter** on all docs with at least `title` and `date`
+- **Kebab-case filenames**, consistent formatting, never modify released changelog versions
+
+This is enough for basic documentation tasks. You ask "update the changelog" and the agent knows the format. You ask "write a README" and it follows a clean structure.
+
+### Layer 2: Project Customization (Agent-Driven)
+
+Here's what makes this skill different: **the agent customizes itself to your project**.
+
+When you ask the agent to "set up documentation standards" or request a document type not in the base rules (like an ADR, runbook, or API doc), the agent starts a conversation:
+
+```
+You:   "Set up documentation for this project"
+Agent: "What kind of project is this?"
+You:   "Backend REST API, team of 4"
+Agent: "I'd suggest API docs, ADRs for architecture decisions, and a
+        changelog. Would runbooks or guides be useful too?"
+You:   "Runbooks yes, guides no."
+Agent: *updates SKILL.md with API doc, ADR, and runbook sections*
+Agent: *creates .docsconfig.yaml with the agreed structure*
 ```
 
-This file defines your documentation structure — which sections exist, where files go, and what frontmatter each document type requires. If no config exists, the skill provides sensible defaults.
+After this conversation, the skill file contains document types, templates, and conventions tailored to **your** project. Future documentation tasks follow these customized standards automatically.
 
-### Step 2: Agent Places Files Correctly
+The agent uses reference templates from DocMark's `templates/` directory as starting points, adapting them to your answers.
 
-Instead of dumping docs in random locations, the agent follows your configured paths:
+### Why This Approach?
 
-| Document Type | Default Path | Naming Pattern |
-|---------------|-------------|----------------|
-| README | `README.md` | Project root |
-| CHANGELOG | `CHANGELOG.md` | Project root |
-| ADRs | `docs/adr/` | `NNNN-title.md` (e.g., `0001-use-postgres.md`) |
-| Guides | `docs/guides/` | `topic-name.md` |
-| API Docs | `docs/api/` | `endpoint-name.md` |
+Every project is different. A backend API needs API docs and runbooks. An open-source library needs CONTRIBUTING guides and tutorials. A solo CLI tool might just need a README and changelog.
 
-The skill also tells the agent to check existing files to determine the next sequential number for ADRs.
+Instead of shipping a bloated skill with every possible document type, the skill stays lean and grows with your project. You only get what you actually need.
 
-### Step 3: Agent Includes Correct Frontmatter
+## Example Workflows
 
-Each document type gets proper YAML frontmatter. The skill specifies exactly which fields are required:
-
-**ADR (Architecture Decision Record):**
-```markdown
----
-status: proposed
-date: 2026-02-19
-deciders: [Engineering Team]
----
-
-# Switch to PostgreSQL
-
-## Context
-Our current database is reaching scalability limits...
-
-## Decision
-We will migrate to PostgreSQL...
-
-## Consequences
-**Positive:** Better concurrent writes, advanced queries
-**Negative:** Increased infrastructure complexity
-```
-
-**Guide:**
-```markdown
----
-title: Getting Started
-difficulty: beginner
-estimated_time: 10 minutes
----
-
-# Getting Started
-
-## Prerequisites
-...
-```
-
-**API Documentation:**
-```markdown
----
-title: Create User
-endpoint: /api/v1/users
-method: POST
-auth_required: true
----
-
-# Create User
-
-## Request
-...
-
-## Response
-...
-```
-
-### Step 4: Agent Follows Templates
-
-The skill includes complete templates for each document type. This ensures consistency:
-- All ADRs have the same structure: Context → Decision → Consequences
-- All guides have prerequisites and step-by-step sections
-- All API docs have request/response examples with error codes
-
-Without the skill, every document has a different structure depending on the agent's mood. With the skill, they're all consistent.
-
-## Full Workflow Example
-
-### Example 1: Creating an ADR
-
-You tell Claude Code:
-
-> "Create an ADR for switching our database to PostgreSQL"
-
-What the agent does internally:
-
-1. **Skill activates** — your request matches "creating ADRs" in the skill description
-2. **Reads `.docsconfig.yaml`** — finds ADR section configured at `docs/adr/` with required frontmatter: `status`, `date`, `deciders`
-3. **Checks existing files** — scans `docs/adr/` and sees `0001-...md`, `0002-...md` exist, so the next number is `0003`
-4. **Creates file** — writes `docs/adr/0003-switch-to-postgresql.md` using the ADR template
-5. **Fills content** — applies the Context → Decision → Consequences structure with relevant content
-
-DocMark auto-reloads via file watching. The new ADR appears in your sidebar immediately.
-
-### Example 2: Updating the Changelog
+### Example 1: Basic Documentation (No Customization)
 
 > "Add a changelog entry for the new export feature"
 
-The agent:
-1. **Skill activates** — matches "generating changelogs"
-2. **Opens `CHANGELOG.md`** — finds the `[Unreleased]` section
-3. **Adds entry** under `### Added`:
-   ```markdown
-   - Export functionality for documentation in PDF, HTML, and Markdown formats
-   ```
+The agent uses base rules:
+1. Opens `CHANGELOG.md`
+2. Adds entry under `[Unreleased]` → `### Added`
+3. Done. No customization needed.
 
-### Example 3: Without the Skill (Comparison)
+### Example 2: First-Time Setup
 
-Same request without the skill installed:
+> "Set up documentation standards for this project"
 
-> "Create an ADR for switching our database to PostgreSQL"
+The agent starts the customization interview:
+1. Asks about project type, team, needs
+2. Based on your answers, updates `SKILL.md` with relevant document types
+3. Creates `.docsconfig.yaml` with paths and frontmatter schemas
+4. From now on, all documentation follows the agreed structure
+
+### Example 3: After Customization
+
+> "Create an ADR for switching to PostgreSQL"
+
+The agent follows the customized skill:
+1. Checks `docs/adr/` for existing files → next number is `0003`
+2. Creates `docs/adr/0003-switch-to-postgresql.md`
+3. Uses the ADR template with correct frontmatter (`status`, `date`, `deciders`)
+4. Fills in Context → Decision → Consequences structure
+
+DocMark auto-reloads via file watching. The new ADR appears in your sidebar immediately.
+
+### Example 4: Without the Skill (Comparison)
+
+Same request without the skill:
+
+> "Create an ADR for switching to PostgreSQL"
 
 The agent might:
 - Create `adr-postgres.md` in the project root (wrong location)
-- Skip frontmatter entirely (no `status`, `date`, `deciders`)
-- Use a random format instead of Context → Decision → Consequences
+- Skip frontmatter entirely
+- Use a random format
 - Not check for existing ADR numbers
 
-**The skill is the difference between consistent, structured documentation and ad-hoc guesswork.**
+**The skill is the difference between consistent documentation and ad-hoc guesswork.**
 
 ## Setting Up `.docsconfig.yaml`
 
-This optional config file lets you customize paths and frontmatter requirements:
+This optional config file defines your documentation structure. The agent can create it during the customization interview, or you can write it manually:
 
 ```yaml
 version: "1.0"
@@ -247,11 +199,6 @@ documentation:
       path: "docs/guides"
       pattern: "*.md"
       frontmatter_schema: "guide"
-    - id: "api"
-      title: "API Documentation"
-      path: "docs/api"
-      pattern: "*.md"
-      frontmatter_schema: "api"
 frontmatter_schemas:
   adr:
     required: [status, date, deciders]
@@ -259,216 +206,29 @@ frontmatter_schemas:
   guide:
     required: [title]
     optional: [difficulty, estimated_time]
-    difficulty_values: [beginner, intermediate, advanced]
-  api:
-    required: [title, endpoint, method]
-    optional: [auth_required, version]
 ```
 
-The agent reads this file because the skill tells it to. Without the skill, the agent wouldn't know to look for `.docsconfig.yaml` at all.
+Without `.docsconfig.yaml`, the skill uses its built-in defaults. The config just lets you customize paths and add project-specific requirements.
 
-## Without `.docsconfig.yaml`
+## Reference Templates
 
-The skill still works. The agent falls back to defaults defined in the skill itself:
-- ADRs → `docs/adr/`
-- Guides → `docs/guides/`
-- API docs → `docs/api/`
-- Changelog → project root
+DocMark includes starter templates in the `templates/` directory. These serve as raw material for the agent during customization — it adapts them to your project rather than copying them verbatim.
 
-The config file just lets you customize these paths and add additional frontmatter requirements specific to your project.
+| Template | Purpose |
+|----------|---------|
+| `adr.md` | Architecture Decision Record |
+| `changelog.md` | Keep a Changelog format |
+| `api-doc.md` | API endpoint documentation |
+| `guide.md` | Step-by-step tutorial |
+| `design-doc.md` | Design document / RFC |
+| `runbook.md` | Operational runbook |
+| `postmortem.md` | Incident postmortem |
+| `release-notes.md` | Version release notes |
+| `troubleshooting.md` | Troubleshooting guide |
+| `docsconfig-template.yaml` | Starter `.docsconfig.yaml` |
+
+You can also use these templates manually, independent of any AI agent.
 
 ## This Is Optional
 
 Skills and `.docsconfig.yaml` are entirely opt-in. DocMark works perfectly as a standalone documentation reader without any AI integration. Just open any folder with markdown files.
-
----
-
-## Appendix: Full Skill Content
-
-Below is the complete DocMark skill that gets installed. This is exactly what the AI agent reads when the skill activates.
-
-````markdown
----
-name: docmark
-description: Follow DocMark documentation standards when creating or editing docs,
-  changelogs, ADRs, API documentation, or guides. Activates when the user asks to
-  document, update docs, add changelog entries, create ADRs, or when .docsconfig.yaml
-  is present.
----
-
-# DocMark Documentation Standard
-
-This skill helps follow the DocMark documentation structure defined in
-`.docsconfig.yaml`. It provides a standardized approach to project documentation
-with consistent frontmatter schemas, templates, and organization patterns.
-
-## Instructions
-
-### 1. Check for Configuration
-
-Always start by checking for `.docsconfig.yaml` in the project root:
-
-```bash
-cat .docsconfig.yaml
-```
-
-If present, read and follow the configuration for:
-- `frontmatter_schemas`: Required fields for each document type
-- `templates`: Template paths or inline templates
-- `paths`: Custom locations for documentation files
-
-### 2. Document Placement Rules
-
-Follow these default paths unless overridden in `.docsconfig.yaml`:
-
-| Document Type | Default Location | Pattern |
-|---------------|------------------|---------|
-| README | `README.md` | Project root |
-| CHANGELOG | `CHANGELOG.md` | Project root |
-| CONTRIBUTING | `CONTRIBUTING.md` | Project root |
-| ADRs | `docs/adr/` | `NNNN-title.md` (e.g., `0001-use-postgres.md`) |
-| Guides | `docs/guides/` | `topic-name.md` |
-| API Docs | `docs/api/` | `endpoint-name.md` |
-
-### 3. Frontmatter Requirements
-
-Each document type has required frontmatter fields:
-
-**ADRs (Architecture Decision Records):**
-- `status`: One of `proposed`, `accepted`, `rejected`, `deprecated`, `superseded`
-- `date`: ISO 8601 format (YYYY-MM-DD)
-- `deciders`: List of people who made the decision
-
-**Guides:**
-- `title`: Guide title
-
-**API Documentation:**
-- `title`: API endpoint title
-- `endpoint`: API path (e.g., `/api/v1/users`)
-- `method`: HTTP method (GET, POST, PUT, DELETE, PATCH)
-- `auth_required`: Boolean indicating if authentication is required
-
-**General Rules:**
-- Always use ISO 8601 date format (YYYY-MM-DD)
-- Frontmatter must be valid YAML enclosed in `---` delimiters
-- Required fields must always be present
-
-### 4. Creating Documents
-
-When creating new documentation:
-
-1. Check `.docsconfig.yaml` for templates
-2. Use the appropriate template for the document type
-3. Fill in all required frontmatter fields
-4. Place the file in the correct location
-5. Use descriptive, kebab-case filenames
-
-### 5. Updating Documents
-
-When updating existing documentation:
-
-1. Preserve existing frontmatter structure
-2. Update `date` field if modifying ADRs
-3. For changelogs, add entries under the `[Unreleased]` section
-4. Maintain consistent formatting with existing content
-
-## Templates
-
-### ADR Template
-
-```markdown
----
-status: proposed
-date: YYYY-MM-DD
-deciders: [Name1, Name2]
----
-
-# Title
-
-## Context
-
-What is the issue that we're seeing that is motivating this decision or change?
-
-## Decision
-
-What is the change that we're proposing and/or doing?
-
-## Consequences
-
-What becomes easier or more difficult to do because of this change?
-```
-
-### Changelog Template
-
-Use the Keep a Changelog format:
-
-```markdown
-# Changelog
-
-## [Unreleased]
-
-### Added
-- New features go here
-
-### Changed
-- Changes to existing functionality
-
-### Fixed
-- Bug fixes
-```
-
-### API Documentation Template
-
-```markdown
----
-title: Endpoint Name
-endpoint: /api/v1/resource
-method: GET
-auth_required: true
----
-
-# Endpoint Name
-
-## Description
-
-Brief description of what this endpoint does.
-
-## Request
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| id | string | Yes | Resource identifier |
-
-## Response
-
-### Success Response (200 OK)
-
-```json
-{
-  "id": "123",
-  "name": "Example"
-}
-```
-
-## Errors
-
-| Status Code | Description |
-|-------------|-------------|
-| 400 | Bad Request |
-| 401 | Unauthorized |
-| 404 | Not Found |
-```
-
-## Notes
-
-- Always check for `.docsconfig.yaml` first before creating documentation
-- If no configuration exists, use the default paths and templates provided here
-- Prefer creating new files over editing existing ones unless explicitly updating
-- ADR numbers should be sequential (check existing ADRs for the next number)
-- Keep changelog entries concise but descriptive
-- API documentation should include realistic examples
-````
-
-You can customize this skill by editing `.claude/skills/docmark/SKILL.md` directly. Changes take effect in the next agent session.

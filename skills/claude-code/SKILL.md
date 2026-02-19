@@ -1,357 +1,95 @@
 ---
 name: docmark
-description: Follow DocMark documentation standards when creating or editing docs, changelogs, ADRs, API documentation, or guides. Activates when the user asks to document, update docs, add changelog entries, create ADRs, or when .docsconfig.yaml is present.
+description: Follow DocMark documentation standards when creating or editing project documentation. Activates when the user asks to document, update docs, add changelog entries, create any documentation, set up documentation standards, or when .docsconfig.yaml is present.
 ---
 
 # DocMark Documentation Standard
 
-This skill helps follow the DocMark documentation structure defined in `.docsconfig.yaml`. It provides a standardized approach to project documentation with consistent frontmatter schemas, templates, and organization patterns.
+This skill provides base rules for consistent project documentation. It is designed to be **customized per-project** — the agent interviews the user about their project and updates this skill with the right document types, templates, and conventions.
 
-## Instructions
+## Base Rules
+
+These apply to every project regardless of customization.
 
 ### 1. Check for Configuration
 
-Always start by checking for `.docsconfig.yaml` in the project root:
+Always check for `.docsconfig.yaml` in the project root first. If present, follow its configuration for paths, frontmatter schemas, and templates. It overrides defaults in this skill.
 
-```bash
-cat .docsconfig.yaml
-```
+### 2. Core Documents
 
-If present, read and follow the configuration for:
-- `frontmatter_schemas`: Required fields for each document type
-- `templates`: Template paths or inline templates
-- `paths`: Custom locations for documentation files
+| Document | Location | Notes |
+|----------|----------|-------|
+| README | `README.md` | Always exists. What it does, how to install, how to use. |
+| CHANGELOG | `CHANGELOG.md` | [Keep a Changelog](https://keepachangelog.com/) format. Entries under `[Unreleased]`. |
+| CONTRIBUTING | `CONTRIBUTING.md` | Only if the project accepts contributions. |
 
-### 2. Document Placement Rules
+### 3. Frontmatter
 
-Follow these default paths unless overridden in `.docsconfig.yaml`:
+All documentation files use YAML frontmatter between `---` delimiters. At minimum:
 
-| Document Type | Default Location | Pattern |
-|---------------|------------------|---------|
-| README | `README.md` | Project root |
-| CHANGELOG | `CHANGELOG.md` | Project root |
-| CONTRIBUTING | `CONTRIBUTING.md` | Project root |
-| ADRs | `docs/adr/` | `NNNN-title.md` (e.g., `0001-use-postgres.md`) |
-| Guides | `docs/guides/` | `topic-name.md` |
-| API Docs | `docs/api/` | `endpoint-name.md` |
-
-### 3. Frontmatter Requirements
-
-Each document type has required frontmatter fields:
-
-**ADRs (Architecture Decision Records):**
-- `status`: One of `proposed`, `accepted`, `rejected`, `deprecated`, `superseded`
-- `date`: ISO 8601 format (YYYY-MM-DD)
-- `deciders`: List of people who made the decision
-
-**Guides:**
-- `title`: Guide title
-
-**API Documentation:**
-- `title`: API endpoint title
-- `endpoint`: API path (e.g., `/api/v1/users`)
-- `method`: HTTP method (GET, POST, PUT, DELETE, PATCH)
-- `auth_required`: Boolean indicating if authentication is required
-
-**General Rules:**
-- Always use ISO 8601 date format (YYYY-MM-DD)
-- Frontmatter must be valid YAML enclosed in `---` delimiters
-- Required fields must always be present
-
-### 4. Creating Documents
-
-When creating new documentation:
-
-1. Check `.docsconfig.yaml` for templates
-2. Use the appropriate template for the document type
-3. Fill in all required frontmatter fields
-4. Place the file in the correct location
-5. Use descriptive, kebab-case filenames
-
-### 5. Updating Documents
-
-When updating existing documentation:
-
-1. Preserve existing frontmatter structure
-2. Update `date` field if modifying ADRs
-3. For changelogs, add entries under the `[Unreleased]` section
-4. Maintain consistent formatting with existing content
-
-## Templates
-
-### ADR Template
-
-```markdown
+```yaml
 ---
-status: proposed
+title: "Document Title"
 date: YYYY-MM-DD
-deciders: [Name1, Name2]
 ---
-
-# Title
-
-## Context
-
-What is the issue that we're seeing that is motivating this decision or change?
-
-## Decision
-
-What is the change that we're proposing and/or doing?
-
-## Consequences
-
-What becomes easier or more difficult to do because of this change?
 ```
 
-### Changelog Template
+Dates are ISO 8601 (YYYY-MM-DD). Additional fields depend on document type.
 
-Use the Keep a Changelog format:
+### 4. General Conventions
 
-```markdown
-# Changelog
-
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
-
-### Added
-- New features go here
-
-### Changed
-- Changes to existing functionality
-
-### Deprecated
-- Soon-to-be removed features
-
-### Removed
-- Removed features
-
-### Fixed
-- Bug fixes
-
-### Security
-- Security fixes
-
-## [1.0.0] - YYYY-MM-DD
-
-### Added
-- Initial release
-```
-
-### API Documentation Template
-
-```markdown
----
-title: Endpoint Name
-endpoint: /api/v1/resource
-method: GET
-auth_required: true
----
-
-# Endpoint Name
-
-## Description
-
-Brief description of what this endpoint does.
-
-## Request
-
-### Headers
-
-```
-Authorization: Bearer <token>
-Content-Type: application/json
-```
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| id | string | Yes | Resource identifier |
-
-### Example Request
-
-```bash
-curl -X GET https://api.example.com/api/v1/resource/123 \
-  -H "Authorization: Bearer <token>"
-```
-
-## Response
-
-### Success Response (200 OK)
-
-```json
-{
-  "id": "123",
-  "name": "Example",
-  "created_at": "2026-02-15T10:00:00Z"
-}
-```
-
-### Response Fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| id | string | Resource identifier |
-| name | string | Resource name |
-| created_at | string | ISO 8601 timestamp |
-
-## Errors
-
-| Status Code | Description |
-|-------------|-------------|
-| 400 | Bad Request - Invalid parameters |
-| 401 | Unauthorized - Invalid or missing token |
-| 404 | Not Found - Resource does not exist |
-| 500 | Internal Server Error |
-
-### Error Response Example
-
-```json
-{
-  "error": "Resource not found",
-  "code": "NOT_FOUND"
-}
-```
-```
-
-## Examples
-
-### Example 1: Creating an ADR
-
-User request: "Create an ADR for switching to PostgreSQL"
-
-Steps:
-1. Check for `.docsconfig.yaml`
-2. Create `docs/adr/0001-switch-to-postgresql.md`
-3. Use ADR template with filled frontmatter:
-
-```markdown
----
-status: proposed
-date: 2026-02-15
-deciders: [Engineering Team]
----
-
-# Switch to PostgreSQL
-
-## Context
-
-Our current SQLite database is reaching scalability limits as our user base grows. We need a more robust solution that supports concurrent writes and better query performance.
-
-## Decision
-
-We will migrate from SQLite to PostgreSQL for our production database.
-
-## Consequences
-
-**Positive:**
-- Better concurrent write performance
-- Advanced query capabilities (JSON, full-text search)
-- Industry-standard tooling and support
-
-**Negative:**
-- Increased infrastructure complexity
-- Migration effort required
-- Higher operational costs
-```
-
-### Example 2: Updating Changelog
-
-User request: "Add changelog entry for new authentication feature"
-
-Steps:
-1. Open `CHANGELOG.md`
-2. Add entry under `[Unreleased]` > `### Added`:
-
-```markdown
-## [Unreleased]
-
-### Added
-- OAuth2 authentication support for third-party integrations
-```
-
-### Example 3: Creating API Documentation
-
-User request: "Document the user creation endpoint"
-
-Steps:
-1. Create `docs/api/create-user.md`
-2. Use API template with complete details:
-
-```markdown
----
-title: Create User
-endpoint: /api/v1/users
-method: POST
-auth_required: true
----
-
-# Create User
-
-## Description
-
-Creates a new user account in the system.
-
-## Request
-
-### Headers
-
-```
-Authorization: Bearer <token>
-Content-Type: application/json
-```
-
-### Body
-
-```json
-{
-  "email": "user@example.com",
-  "name": "John Doe",
-  "role": "member"
-}
-```
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| email | string | Yes | User email address |
-| name | string | Yes | User full name |
-| role | string | No | User role (default: member) |
-
-## Response
-
-### Success Response (201 Created)
-
-```json
-{
-  "id": "usr_123",
-  "email": "user@example.com",
-  "name": "John Doe",
-  "role": "member",
-  "created_at": "2026-02-15T10:00:00Z"
-}
-```
-
-## Errors
-
-| Status Code | Description |
-|-------------|-------------|
-| 400 | Bad Request - Invalid email or missing required fields |
-| 401 | Unauthorized - Invalid or missing token |
-| 409 | Conflict - Email already exists |
-```
-
-## Notes
-
-- Always check for `.docsconfig.yaml` first before creating documentation
-- If no configuration exists, use the default paths and templates provided here
+- Check `.docsconfig.yaml` before creating any documentation
+- Use kebab-case filenames (e.g., `setup-local-dev.md`)
+- Changelogs: add under `[Unreleased]`, never modify released versions
+- Match formatting with existing project documentation
 - Prefer creating new files over editing existing ones unless explicitly updating
-- Maintain consistency with existing documentation style in the project
-- ADR numbers should be sequential (check existing ADRs for the next number)
-- Keep changelog entries concise but descriptive
-- API documentation should include realistic examples
+
+## Customizing This Skill
+
+This skill ships minimal. **You are expected to customize it** by talking to the user about their project.
+
+### When to Start
+
+- User mentions "set up docs", "documentation standards", or "customize skill"
+- User asks for a document type not covered above (ADR, API doc, runbook, etc.)
+- Project has no `.docsconfig.yaml` and no established doc structure
+
+### How It Works
+
+1. **Ask the user** about their project — don't assume. Have a conversation:
+   - What kind of project is this? (API, library, CLI, frontend, infra, etc.)
+   - Solo or team? Open source?
+   - What kinds of documents do they need?
+   - Any existing conventions they want to keep?
+
+2. **Based on answers**, append to the `CUSTOMIZATION AREA` at the bottom of this file:
+   - Document types with paths, frontmatter specs, and templates
+   - Project-specific conventions or rules
+   - Optionally create a `.docsconfig.yaml`
+
+3. **Reference templates** are available in the project's `templates/` directory (if DocMark is installed). Use them as starting points — don't copy them verbatim. Adapt to what the user described.
+
+4. **Keep it lean** — only add document types the user actually needs. A backend API project doesn't need a CONTRIBUTING guide. A solo tool doesn't need ADRs.
+
+### Example Customization Flow
+
+```
+User: "Set up documentation for this project"
+Agent: "What kind of project is this?"
+User: "It's a backend REST API, team of 4"
+Agent: "Got it. I'd suggest: API docs, ADRs for architecture decisions, 
+        and a changelog. Do you also need runbooks or guides?"
+User: "Yeah, runbooks would be good. No guides."
+Agent: *updates this SKILL.md with API doc, ADR, and runbook sections*
+Agent: *creates .docsconfig.yaml with the agreed structure*
+```
+
+After customization, the agent follows the updated skill for all future documentation tasks in this project.
+
+---
+
+<!-- 
+CUSTOMIZATION AREA
+After interviewing the user, append project-specific document types, 
+templates, and conventions below this line.
+-->

@@ -192,20 +192,23 @@ enum SkillContent {
     static let claudeCode = """
     ---
     name: docmark
-    description: Follow DocMark documentation standards when creating or editing docs, changelogs, ADRs, API documentation, or guides. Activates when the user asks to document, update docs, add changelog entries, create ADRs, or when .docsconfig.yaml is present.
+    description: Follow DocMark documentation standards when creating or editing project documentation. Activates when the user asks to document, update docs, add changelog entries, create any documentation, set up documentation standards, or when .docsconfig.yaml is present.
     ---
 
     # DocMark Documentation Standard
 
-    This skill helps follow the DocMark documentation structure defined in `.docsconfig.yaml`.
+    This skill provides base rules for consistent project documentation. It is designed to be customized per-project — the agent interviews the user about their project and updates this skill with the right document types, templates, and conventions.
 
-    ## Instructions
+    ## Base Rules
 
-    1. Check for `.docsconfig.yaml` in the project root
-    2. Follow configured directory structure for different document types
-    3. Use appropriate frontmatter for each document type (ADR: status/date/deciders, Guide: title/difficulty, API: title/endpoint/method)
-    4. Place files in correct locations (ADRs in docs/adr/, Guides in docs/guides/, API in docs/api/)
-    5. Use sequential numbering for ADRs (check existing files for next number)
+    1. Check for `.docsconfig.yaml` in the project root first — it overrides defaults
+    2. Core documents: README.md, CHANGELOG.md (Keep a Changelog format), CONTRIBUTING.md (if needed)
+    3. All docs use YAML frontmatter with at least `title` and `date`
+    4. Use kebab-case filenames, never modify released changelog versions
+
+    ## Customizing This Skill
+
+    When the user asks to set up docs or requests a document type not covered above, interview them about their project (type, team size, needed doc types) and update this SKILL.md with project-specific document types, templates, and conventions. Reference templates are in the project's `templates/` directory.
     """
 
     static let openCode = """

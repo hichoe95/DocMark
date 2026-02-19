@@ -663,9 +663,9 @@ final class AppState: ObservableObject {
 
     A skill is a markdown file (`SKILL.md`) that gets **injected into the AI agent's context**. It contains instructions the agent follows when working on your project.
 
-    Without a skill, the agent writes docs in random formats and locations. With the skill, every document follows your configured structure.
+    Without a skill, the agent writes docs in random formats and locations. With the skill, every document follows consistent rules — and the skill **customizes itself** to fit your project.
 
-    ### How the Agent Discovers Skills
+    ### How It Works
 
     ```
     Project root
@@ -675,32 +675,40 @@ final class AppState: ObservableObject {
                 └── SKILL.md    ← Agent finds and reads this
     ```
 
-    1. The agent scans `.claude/skills/` for subdirectories containing `SKILL.md`
-    2. It reads the skill's `description` to know **when** to activate it
-    3. When your request matches (e.g., "create an ADR"), the agent loads the full instructions
+    1. The agent scans `.claude/skills/` for skill files
+    2. It reads the `description` to know **when** to activate
+    3. When your request matches, the agent loads the full instructions
     4. The agent follows those instructions while completing your task
 
     ## Installing the Skill
 
     **Project-Level (Recommended):** Click "Install AI Skill" at the bottom of the sidebar, or press `⌘I`.
 
-    This creates `.claude/skills/docmark/SKILL.md` inside your project. Both Claude Code and OpenCode detect this path automatically. The file gets committed to git — every team member gets the skill automatically.
+    This creates `.claude/skills/docmark/SKILL.md` inside your project. Committed to git — every team member gets the skill automatically.
 
     **Global:** Menu bar → Tools → Install Skill Globally → choose Claude Code or OpenCode.
 
-    ## What Happens After Installation
+    ## Two Layers
 
-    ### 1. Agent reads your config
-    The skill tells the agent to check `.docsconfig.yaml` for your documentation structure.
+    ### Base Rules (Always Active)
+    - Check `.docsconfig.yaml` first
+    - Core documents: README, CHANGELOG (Keep a Changelog), CONTRIBUTING
+    - YAML frontmatter on all docs, kebab-case filenames
 
-    ### 2. Agent places files correctly
-    ADRs in `docs/adr/`, guides in `docs/guides/`, API docs in `docs/api/` — not random locations.
+    ### Project Customization (Agent-Driven)
+    When you ask to "set up docs" or request a document type not in the base rules, the agent **interviews you** about your project and updates the skill:
 
-    ### 3. Agent includes frontmatter
-    Each document type gets proper YAML frontmatter (status, date, deciders for ADRs; title, difficulty for guides).
+    ```
+    You:   "Set up documentation for this project"
+    Agent: "What kind of project is this?"
+    You:   "Backend REST API, team of 4"
+    Agent: "I'd suggest API docs, ADRs, and a changelog.
+            Runbooks or guides too?"
+    You:   "Runbooks yes."
+    Agent: *updates SKILL.md with API doc, ADR, and runbook sections*
+    ```
 
-    ### 4. Agent follows templates
-    Consistent structure: all ADRs have Context → Decision → Consequences, all guides have prerequisites.
+    The skill grows with your project. You only get what you actually need.
 
     ## Example: With vs Without
 
@@ -708,28 +716,6 @@ final class AppState: ObservableObject {
 
     **With skill:** Creates `docs/adr/0003-switch-to-postgresql.md` with correct frontmatter and template.
     **Without skill:** Might create `adr-postgres.md` in the project root, skip frontmatter, use random format.
-
-    ```markdown
-    ---
-    status: proposed
-    date: 2026-02-19
-    deciders: [Engineering Team]
-    ---
-
-    # Switch to PostgreSQL
-
-    ## Context
-    Our current database is reaching scalability limits...
-
-    ## Decision
-    We will migrate to PostgreSQL...
-
-    ## Consequences
-    **Positive:** Better concurrent writes, advanced queries
-    **Negative:** Increased infrastructure complexity
-    ```
-
-    DocMark auto-reloads. The new ADR appears in your sidebar immediately.
 
     ## This Is Optional
 
