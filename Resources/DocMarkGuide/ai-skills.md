@@ -31,6 +31,29 @@ Project root
 
 No configuration needed. The agent discovers the skill automatically just because the file exists in the right path.
 
+### Skill File Format
+
+A `SKILL.md` file has two parts:
+
+**1. YAML Frontmatter** (between `---` markers) — metadata that tells the agent when to use the skill:
+
+```yaml
+---
+name: docmark
+description: Follow DocMark documentation standards when creating
+  or editing docs, changelogs, ADRs, API documentation, or guides.
+---
+```
+
+| Field | Purpose |
+|-------|---------|
+| `name` | Skill name. Becomes the `/slash-command` (e.g., `/docmark`) |
+| `description` | Tells the agent **when** to activate. The agent matches your request against this text. |
+
+**2. Markdown Body** — the actual instructions the agent follows. This can include rules, templates, examples, tables — anything you'd tell a human colleague about how to write docs for your project.
+
+The frontmatter is always loaded so the agent knows the skill exists. The full body only loads when the skill activates, keeping context usage efficient.
+
 ### Automatic vs Manual Activation
 
 The DocMark skill activates **automatically** when you ask the agent to:
@@ -257,3 +280,195 @@ The config file just lets you customize these paths and add additional frontmatt
 ## This Is Optional
 
 Skills and `.docsconfig.yaml` are entirely opt-in. DocMark works perfectly as a standalone documentation reader without any AI integration. Just open any folder with markdown files.
+
+---
+
+## Appendix: Full Skill Content
+
+Below is the complete DocMark skill that gets installed. This is exactly what the AI agent reads when the skill activates.
+
+````markdown
+---
+name: docmark
+description: Follow DocMark documentation standards when creating or editing docs,
+  changelogs, ADRs, API documentation, or guides. Activates when the user asks to
+  document, update docs, add changelog entries, create ADRs, or when .docsconfig.yaml
+  is present.
+---
+
+# DocMark Documentation Standard
+
+This skill helps follow the DocMark documentation structure defined in
+`.docsconfig.yaml`. It provides a standardized approach to project documentation
+with consistent frontmatter schemas, templates, and organization patterns.
+
+## Instructions
+
+### 1. Check for Configuration
+
+Always start by checking for `.docsconfig.yaml` in the project root:
+
+```bash
+cat .docsconfig.yaml
+```
+
+If present, read and follow the configuration for:
+- `frontmatter_schemas`: Required fields for each document type
+- `templates`: Template paths or inline templates
+- `paths`: Custom locations for documentation files
+
+### 2. Document Placement Rules
+
+Follow these default paths unless overridden in `.docsconfig.yaml`:
+
+| Document Type | Default Location | Pattern |
+|---------------|------------------|---------|
+| README | `README.md` | Project root |
+| CHANGELOG | `CHANGELOG.md` | Project root |
+| CONTRIBUTING | `CONTRIBUTING.md` | Project root |
+| ADRs | `docs/adr/` | `NNNN-title.md` (e.g., `0001-use-postgres.md`) |
+| Guides | `docs/guides/` | `topic-name.md` |
+| API Docs | `docs/api/` | `endpoint-name.md` |
+
+### 3. Frontmatter Requirements
+
+Each document type has required frontmatter fields:
+
+**ADRs (Architecture Decision Records):**
+- `status`: One of `proposed`, `accepted`, `rejected`, `deprecated`, `superseded`
+- `date`: ISO 8601 format (YYYY-MM-DD)
+- `deciders`: List of people who made the decision
+
+**Guides:**
+- `title`: Guide title
+
+**API Documentation:**
+- `title`: API endpoint title
+- `endpoint`: API path (e.g., `/api/v1/users`)
+- `method`: HTTP method (GET, POST, PUT, DELETE, PATCH)
+- `auth_required`: Boolean indicating if authentication is required
+
+**General Rules:**
+- Always use ISO 8601 date format (YYYY-MM-DD)
+- Frontmatter must be valid YAML enclosed in `---` delimiters
+- Required fields must always be present
+
+### 4. Creating Documents
+
+When creating new documentation:
+
+1. Check `.docsconfig.yaml` for templates
+2. Use the appropriate template for the document type
+3. Fill in all required frontmatter fields
+4. Place the file in the correct location
+5. Use descriptive, kebab-case filenames
+
+### 5. Updating Documents
+
+When updating existing documentation:
+
+1. Preserve existing frontmatter structure
+2. Update `date` field if modifying ADRs
+3. For changelogs, add entries under the `[Unreleased]` section
+4. Maintain consistent formatting with existing content
+
+## Templates
+
+### ADR Template
+
+```markdown
+---
+status: proposed
+date: YYYY-MM-DD
+deciders: [Name1, Name2]
+---
+
+# Title
+
+## Context
+
+What is the issue that we're seeing that is motivating this decision or change?
+
+## Decision
+
+What is the change that we're proposing and/or doing?
+
+## Consequences
+
+What becomes easier or more difficult to do because of this change?
+```
+
+### Changelog Template
+
+Use the Keep a Changelog format:
+
+```markdown
+# Changelog
+
+## [Unreleased]
+
+### Added
+- New features go here
+
+### Changed
+- Changes to existing functionality
+
+### Fixed
+- Bug fixes
+```
+
+### API Documentation Template
+
+```markdown
+---
+title: Endpoint Name
+endpoint: /api/v1/resource
+method: GET
+auth_required: true
+---
+
+# Endpoint Name
+
+## Description
+
+Brief description of what this endpoint does.
+
+## Request
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| id | string | Yes | Resource identifier |
+
+## Response
+
+### Success Response (200 OK)
+
+```json
+{
+  "id": "123",
+  "name": "Example"
+}
+```
+
+## Errors
+
+| Status Code | Description |
+|-------------|-------------|
+| 400 | Bad Request |
+| 401 | Unauthorized |
+| 404 | Not Found |
+```
+
+## Notes
+
+- Always check for `.docsconfig.yaml` first before creating documentation
+- If no configuration exists, use the default paths and templates provided here
+- Prefer creating new files over editing existing ones unless explicitly updating
+- ADR numbers should be sequential (check existing ADRs for the next number)
+- Keep changelog entries concise but descriptive
+- API documentation should include realistic examples
+````
+
+You can customize this skill by editing `.claude/skills/docmark/SKILL.md` directly. Changes take effect in the next agent session.
