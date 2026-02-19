@@ -18,7 +18,7 @@ final class LicenseManager: ObservableObject {
     
     @Published var isPro: Bool = false
     
-    private let freeFeatures: Set<Feature> = []
+    private let freeFeatures: Set<Feature> = [.gitIntegration]
     
     private init() {}
     
