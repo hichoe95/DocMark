@@ -121,4 +121,69 @@ struct GitService {
     static func remoteURL(at path: String) -> String? {
         return runGit(args: ["remote", "get-url", "origin"], in: path)
     }
+
+    // MARK: - Diff & Change Details
+
+    static func changedFilesWithStatus(at path: String) -> [(status: GitFileStatus, relativePath: String)] {
+        guard let output = runGit(args: ["status", "--porcelain"], in: path) else {
+            return []
+        }
+
+        var results: [(GitFileStatus, String)] = []
+
+        for line in output.components(separatedBy: "\n") {
+            guard line.count >= 3 else { continue }
+
+            let indexStatus = line[line.startIndex]
+            let worktreeStatus = line[line.index(after: line.startIndex)]
+            let filePath = String(line.dropFirst(3)).trimmingCharacters(in: .whitespaces)
+            guard !filePath.isEmpty else { continue }
+
+            let status: GitFileStatus
+            if indexStatus == "?" && worktreeStatus == "?" {
+                status = .untracked
+            } else if indexStatus == "A" {
+                status = .added
+            } else if indexStatus == "D" || worktreeStatus == "D" {
+                status = .deleted
+            } else if indexStatus == "R" {
+                status = .renamed
+            } else {
+                status = .modified
+            }
+
+            let actualPath: String
+            if let arrowRange = filePath.range(of: " -> ") {
+                actualPath = String(filePath[arrowRange.upperBound...])
+            } else {
+                actualPath = filePath
+            }
+
+            results.append((status, actualPath))
+        }
+
+        return results
+    }
+
+    static func diff(for filePath: String, in repoPath: String, isUntracked: Bool = false) -> String? {
+        if isUntracked {
+            let fullPath = URL(fileURLWithPath: repoPath)
+                .appendingPathComponent(filePath).path
+            guard let content = try? String(contentsOfFile: fullPath, encoding: .utf8) else {
+                return nil
+            }
+            let lines = content.components(separatedBy: "\n")
+            var result = "--- /dev/null\n+++ b/\(filePath)\n@@ -0,0 +1,\(lines.count) @@\n"
+            for line in lines {
+                result += "+\(line)\n"
+            }
+            return result
+        }
+
+        return runGit(args: ["diff", "HEAD", "--", filePath], in: repoPath)
+    }
+
+    static func diffStat(at path: String) -> String? {
+        return runGit(args: ["diff", "HEAD", "--stat"], in: path)
+    }
 }

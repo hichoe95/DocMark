@@ -54,12 +54,28 @@ struct FolderNodeView: View {
         return selected.id == nodeDoc.id
     }
 
+    private var gitStatusForNode: GitFileStatus? {
+        guard node.isFile, let doc = node.document else { return nil }
+        return appState.isFileChanged(doc.relativePath)
+    }
+
     var body: some View {
         if node.isFile, let doc = node.document {
             Label {
-                Text(node.name)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
+                HStack(spacing: 4) {
+                    Text(node.name)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer()
+                    if let status = gitStatusForNode {
+                        Text(status.shortLabel)
+                            .font(.system(size: 9, weight: .bold, design: .monospaced))
+                            .foregroundStyle(status.color)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(status.color.opacity(0.15), in: RoundedRectangle(cornerRadius: 3))
+                    }
+                }
             } icon: {
                 Image(systemName: iconForFile(node.name))
                     .foregroundStyle(iconColor(for: node.name))

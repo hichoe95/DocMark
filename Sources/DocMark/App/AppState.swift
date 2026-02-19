@@ -30,8 +30,11 @@ final class AppState: ObservableObject {
 
     // MARK: - TOC & Git
     @Published var isShowingTOC: Bool = false
+    @Published var isShowingGitChanges: Bool = false
     @Published var gitBranch: String?
     @Published var gitHasChanges: Bool = false
+    @Published var gitChangedFiles: [GitFileChange] = []
+    @Published var selectedGitChange: GitFileChange?
 
     // MARK: - Services
     private let db = GRDBManager.shared
@@ -362,10 +365,49 @@ final class AppState: ObservableObject {
         guard let project = selectedProject else {
             gitBranch = nil
             gitHasChanges = false
+            gitChangedFiles = []
             return
         }
         gitBranch = GitService.currentBranch(at: project.path)
         gitHasChanges = GitService.hasUncommittedChanges(at: project.path)
+        loadGitChanges()
+    }
+
+    func loadGitChanges() {
+        guard let project = selectedProject else {
+            gitChangedFiles = []
+            return
+        }
+        let changes = GitService.changedFilesWithStatus(at: project.path)
+        gitChangedFiles = changes.map { GitFileChange(relativePath: $0.relativePath, status: $0.status) }
+    }
+
+    func toggleGitChanges() {
+        isShowingGitChanges.toggle()
+        if isShowingGitChanges {
+            isShowingQuickOpen = false
+            isShowingSearch = false
+            loadGitChanges()
+        }
+    }
+
+    func gitDiff(for change: GitFileChange) -> String? {
+        guard let project = selectedProject else { return nil }
+        return GitService.diff(
+            for: change.relativePath,
+            in: project.path,
+            isUntracked: change.status == .untracked || change.status == .added
+        )
+    }
+
+    func navigateToGitChange(_ change: GitFileChange) {
+        guard change.isMarkdown else { return }
+        navigateToDocument(withRelativePath: change.relativePath)
+        isShowingGitChanges = false
+    }
+
+    func isFileChanged(_ relativePath: String) -> GitFileStatus? {
+        gitChangedFiles.first(where: { $0.relativePath == relativePath })?.status
     }
 
     // MARK: - File Watching
@@ -419,6 +461,8 @@ final class AppState: ObservableObject {
             try? documentRepo.removeDocument(path: change.path)
             rescanCurrentProject()
         }
+
+        loadGitChanges()
     }
 
     private func handleFullRescan() {

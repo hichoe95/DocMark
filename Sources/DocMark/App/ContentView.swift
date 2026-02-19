@@ -19,6 +19,10 @@ struct ContentView: View {
             if appState.isShowingSearch {
                 SearchPanel()
             }
+
+            if appState.isShowingGitChanges {
+                GitChangesPanel()
+            }
         }
     }
 
@@ -56,22 +60,26 @@ struct ContentView: View {
 
             ToolbarItemGroup(placement: .primaryAction) {
                 if let branch = appState.gitBranch, licenseManager.isEnabled(.gitIntegration) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.triangle.branch")
-                            .font(.caption)
-                        Text(branch)
-                            .font(.caption)
-                            .lineLimit(1)
-                        if appState.gitHasChanges {
-                            Circle()
-                                .fill(.orange)
-                                .frame(width: 6, height: 6)
+                    Button(action: { appState.toggleGitChanges() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.triangle.branch")
+                                .font(.caption)
+                            Text(branch)
+                                .font(.caption)
+                                .lineLimit(1)
+                            if appState.gitHasChanges {
+                                Circle()
+                                    .fill(.orange)
+                                    .frame(width: 6, height: 6)
+                            }
                         }
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.quaternary, in: Capsule())
                     }
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.quaternary, in: Capsule())
+                    .buttonStyle(.plain)
+                    .help("Git Changes (\u{2318}G)")
                 }
 
                 Button(action: { appState.toggleTOC() }) {

@@ -261,6 +261,11 @@ struct DocMarkCommands: Commands {
             }
             .keyboardShortcut("t", modifiers: .command)
 
+            Button("Git Changes") {
+                appState.toggleGitChanges()
+            }
+            .keyboardShortcut("g", modifiers: .command)
+
             Divider()
 
             Button("Project Library") {
