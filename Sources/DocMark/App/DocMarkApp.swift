@@ -72,89 +72,124 @@ struct DocMarkApp: App {
         .commands {
             SidebarCommands()
             DocMarkCommands(appState: appState)
-            ToolsCommands()
+            ToolsCommands(appState: appState)
         }
     }
 }
 
 struct ToolsCommands: Commands {
-    @State private var alertMessage = ""
-    @State private var showAlert = false
+    @ObservedObject var appState: AppState
 
     var body: some Commands {
         CommandMenu("Tools") {
-            Button("Install Claude Code Skill") {
-                installClaudeCodeSkill()
+            Button("Install Skill to Project") {
+                installSkillToProject()
             }
-            Button("Install OpenCode Skill") {
-                installOpenCodeSkill()
+            .keyboardShortcut("i", modifiers: .command)
+            .disabled(appState.selectedProject == nil)
+
+            Divider()
+
+            Menu("Install Skill Globally") {
+                Button("Claude Code") {
+                    installGlobalClaudeCodeSkill()
+                }
+                Button("OpenCode") {
+                    installGlobalOpenCodeSkill()
+                }
             }
         }
     }
 
-    private func installClaudeCodeSkill() {
+    // MARK: - Project-Level Install
+
+    private func installSkillToProject() {
+        guard let project = appState.selectedProject else { return }
+
+        let projectURL = URL(fileURLWithPath: project.path)
+        let destDir = projectURL.appendingPathComponent(".claude/skills/docmark")
+        let destFile = destDir.appendingPathComponent("SKILL.md")
+
+        if FileManager.default.fileExists(atPath: destFile.path) {
+            showAlert(title: "Already Installed", message: "Skill is already installed at:\n\(destFile.path)")
+            return
+        }
+
+        do {
+            try FileManager.default.createDirectory(at: destDir, withIntermediateDirectories: true)
+            try skillContent(forResource: "SKILL", withExtension: "md", fallback: SkillContent.claudeCode)
+                .write(to: destFile, atomically: true, encoding: .utf8)
+
+            showAlert(
+                title: "Skill Installed",
+                message: "Installed to:\n\(destFile.path)\n\nBoth Claude Code and OpenCode will automatically use this skill in this project."
+            )
+        } catch {
+            showAlert(title: "Installation Failed", message: "Could not install skill: \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - Global Install
+
+    private func installGlobalClaudeCodeSkill() {
         let destDir = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".claude/skills/docmark")
         let destFile = destDir.appendingPathComponent("SKILL.md")
 
+        if FileManager.default.fileExists(atPath: destFile.path) {
+            showAlert(title: "Already Installed", message: "Claude Code skill is already installed at:\n\(destFile.path)")
+            return
+        }
+
         do {
             try FileManager.default.createDirectory(at: destDir, withIntermediateDirectories: true)
+            try skillContent(forResource: "SKILL", withExtension: "md", fallback: SkillContent.claudeCode)
+                .write(to: destFile, atomically: true, encoding: .utf8)
 
-            if let bundled = Bundle.main.url(forResource: "SKILL", withExtension: "md", subdirectory: "skills/claude-code") {
-                try FileManager.default.copyItem(at: bundled, to: destFile)
-            } else {
-                try SkillContent.claudeCode.write(to: destFile, atomically: true, encoding: .utf8)
-            }
-
-            showSuccessAlert(
+            showAlert(
                 title: "Claude Code Skill Installed",
-                message: "Installed to:\n\(destFile.path)\n\nClaude Code will automatically use this skill when working on projects with .docsconfig.yaml."
-            )
-        } catch let error as NSError where error.code == NSFileWriteFileExistsError {
-            showSuccessAlert(
-                title: "Already Installed",
-                message: "Claude Code skill is already installed at:\n\(destFile.path)"
+                message: "Installed to:\n\(destFile.path)\n\nClaude Code will automatically use this skill in all projects."
             )
         } catch {
-            showSuccessAlert(
-                title: "Installation Failed",
-                message: "Could not install skill: \(error.localizedDescription)"
-            )
+            showAlert(title: "Installation Failed", message: "Could not install skill: \(error.localizedDescription)")
         }
     }
 
-    private func installOpenCodeSkill() {
+    private func installGlobalOpenCodeSkill() {
         let destDir = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".opencode/skills/docmark")
         let destFile = destDir.appendingPathComponent("skill.yaml")
 
+        if FileManager.default.fileExists(atPath: destFile.path) {
+            showAlert(title: "Already Installed", message: "OpenCode skill is already installed at:\n\(destFile.path)")
+            return
+        }
+
         do {
             try FileManager.default.createDirectory(at: destDir, withIntermediateDirectories: true)
+            try skillContent(forResource: "skill", withExtension: "yaml", fallback: SkillContent.openCode)
+                .write(to: destFile, atomically: true, encoding: .utf8)
 
-            if let bundled = Bundle.main.url(forResource: "skill", withExtension: "yaml", subdirectory: "skills/opencode") {
-                try FileManager.default.copyItem(at: bundled, to: destFile)
-            } else {
-                try SkillContent.openCode.write(to: destFile, atomically: true, encoding: .utf8)
-            }
-
-            showSuccessAlert(
+            showAlert(
                 title: "OpenCode Skill Installed",
-                message: "Installed to:\n\(destFile.path)\n\nOpenCode will activate this skill when it detects .docsconfig.yaml or documentation-related keywords."
-            )
-        } catch let error as NSError where error.code == NSFileWriteFileExistsError {
-            showSuccessAlert(
-                title: "Already Installed",
-                message: "OpenCode skill is already installed at:\n\(destFile.path)"
+                message: "Installed to:\n\(destFile.path)\n\nOpenCode will activate this skill when it detects .docsconfig.yaml."
             )
         } catch {
-            showSuccessAlert(
-                title: "Installation Failed",
-                message: "Could not install skill: \(error.localizedDescription)"
-            )
+            showAlert(title: "Installation Failed", message: "Could not install skill: \(error.localizedDescription)")
         }
     }
 
-    private func showSuccessAlert(title: String, message: String) {
+    // MARK: - Helpers
+
+    private func skillContent(forResource name: String, withExtension ext: String, fallback: String) -> String {
+        if let bundled = Bundle.main.url(forResource: name, withExtension: ext, subdirectory: "skills/claude-code") ?? Bundle.main.url(forResource: name, withExtension: ext, subdirectory: "skills/opencode"),
+           let content = try? String(contentsOf: bundled, encoding: .utf8) {
+            return content
+        }
+        return fallback
+    }
+
+    private func showAlert(title: String, message: String) {
         let alert = NSAlert()
         alert.messageText = title
         alert.informativeText = message

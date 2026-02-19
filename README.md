@@ -89,10 +89,11 @@ frontmatter_schemas:
 
 **Step 2 — Install the skill** for your AI coding agent:
 
-| Agent | Install | Skill Location |
+| Scope | Install | Skill Location |
 |-------|---------|----------------|
-| Claude Code | Tools → Install Claude Code Skill | `~/.claude/skills/docmark/SKILL.md` |
-| OpenCode | Tools → Install OpenCode Skill | `~/.opencode/skills/docmark/skill.yaml` |
+| Project (default) | Tools → Install Skill to Project (⌘I) | `{project}/.claude/skills/docmark/SKILL.md` |
+| Global (Claude Code) | Tools → Install Skill Globally → Claude Code | `~/.claude/skills/docmark/SKILL.md` |
+| Global (OpenCode) | Tools → Install Skill Globally → OpenCode | `~/.opencode/skills/docmark/skill.yaml` |
 
 Once installed, the agent automatically:
 - Reads your `.docsconfig.yaml` to understand the project structure
