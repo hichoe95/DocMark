@@ -48,7 +48,18 @@ Dates are ISO 8601 (YYYY-MM-DD). Additional fields depend on document type.
 
 This skill ships minimal. **You are expected to customize it** by talking to the user about their project.
 
-### When to Start
+### First Activation Notice
+
+On the **first activation** of this skill, check if the CUSTOMIZATION AREA at the bottom of this file is empty. If it is, briefly offer customization before proceeding with the user's request:
+
+> "This project's documentation skill hasn't been customized yet. I can set up documentation standards tailored to this project. Would you like to do that now, or should I proceed with the defaults?"
+
+- If the user wants to customize → start the interview (see below)
+- If the user declines → proceed with base rules, handle their request normally
+
+**Do not ask again** after the first time. If the user said no, respect that and just use base rules going forward.
+
+### Other Customization Triggers
 
 - User mentions "set up docs", "documentation standards", or "customize skill"
 - User asks for a document type not covered above (ADR, API doc, runbook, etc.)
